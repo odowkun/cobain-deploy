@@ -7,8 +7,14 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
 import pickle
 
+app = FastAPI()
+
 # Load the saved model and preprocessing artifacts
-model = tf.keras.models.load_model('technician_recommendation_model_advanced.h5')
+try:
+    model = tf.keras.models.load_model('technician_recommendation_model_advanced.h5', compile=False)
+except TypeError as e:
+    raise RuntimeError(f"Model deserialization error: {str(e)}")
+
 with open('tfidf_vectorizer.pkl', 'rb') as f:
     tfidf = pickle.load(f)
 with open('scaler.pkl', 'rb') as f:
@@ -33,7 +39,7 @@ X_rating = data['ratingsreceived'].values.reshape(-1, 1)
 X_cert = certifications_encoded.values
 X = np.hstack([skills_tfidf, X_exp, X_cert, X_rating])
 
-def     predict_best_technician(user_skill):
+def predict_best_technician(user_skill):
     # Preprocess the user input skill
     user_skill_tfidf = tfidf.transform([user_skill]).toarray()
     
@@ -63,8 +69,6 @@ def     predict_best_technician(user_skill):
         return original_data.iloc[best_technician_index]
     else:
         return "No matching technician found."
-
-app = FastAPI()
 
 class SkillInput(BaseModel):
     skill: str
